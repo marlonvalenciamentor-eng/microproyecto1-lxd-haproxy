@@ -14,10 +14,20 @@ sleep 5
 
 # ── 2. Wait for join token from servidorUbuntu ────────────────────────────
 echo "Waiting for join token from servidorUbuntu..."
-for i in $(seq 1 30); do
-  [ -s /vagrant/lxd_join_token.txt ] && break
+TOKEN_FOUND=0
+for i in $(seq 1 36); do
+  if [ -s /vagrant/lxd_join_token.txt ]; then
+    TOKEN_FOUND=1
+    break
+  fi
+  echo "  attempt $i/36 — waiting 10s..."
   sleep 10
 done
+
+if [ "$TOKEN_FOUND" -eq 0 ]; then
+  echo "ERROR: Token not found after 6 minutes. Is servidorUbuntu provisioning still running?"
+  exit 1
+fi
 
 JOIN_TOKEN=$(cat /vagrant/lxd_join_token.txt)
 echo "Token obtained: ${JOIN_TOKEN:0:20}..."
