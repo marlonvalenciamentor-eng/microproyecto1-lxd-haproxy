@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Server 1</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff}
+    .card{text-align:center;padding:3rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:480px;width:90%}
+    .badge{display:inline-block;background:#16a34a;color:#fff;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:.3rem 1rem;border-radius:100px;margin-bottom:1.5rem}
+    h1{font-size:3rem;font-weight:800;background:linear-gradient(90deg,#4ade80,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem}
+    .subtitle{color:rgba(255,255,255,.6);margin-bottom:2rem}
+    .info{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:1rem 1.5rem;text-align:left}
+    .info p{font-size:.85rem;color:rgba(255,255,255,.7);line-height:2}
+    .info span{color:#4ade80;font-weight:600}
+    .status{display:inline-flex;align-items:center;gap:.4rem;margin-top:1.5rem;font-size:.8rem;color:rgba(255,255,255,.5)}
+    .dot{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Produccion</span>
+    <h1>WEB 1</h1>
+    <p class="subtitle">Ubuntu 18.04 &mdash; Apache 2.4 &mdash; LXD Cluster &mdash; Nodo: servidorUbuntu</p>
+    <div class="info">
+      <p><span>Contenedor:</span> web1</p>
+      <p><span>Rol:</span> Servidor de Produccion (Primario)</p>
+      <p><span>Host VM:</span> servidorUbuntu (192.168.100.3)</p>
+      <p><span>Puerto:</span> 8081</p>
+      <p><span>Cluster:</span> LXD 5.0</p>
+    </div>
+    <div class="status"><span class="dot"></span>Servicio activo</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+HTTP/1.0 503 Service Unavailable
+Cache-Control: no-cache
+Connection: close
+Content-Type: text/html
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Servicio No Disponible</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .card{text-align:center;padding:3rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:480px}
+    .icon{font-size:4rem;margin-bottom:1rem}
+    h1{font-size:1.8rem;color:#f87171;margin-bottom:.75rem}
+    p{color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:.5rem}
+    .code{display:inline-block;background:rgba(248,113,113,.15);color:#f87171;padding:.25rem .75rem;border-radius:6px;font-family:monospace;margin-top:1rem}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#9888;</div>
+    <h1>Servicio Temporalmente No Disponible</h1>
+    <p>Lo sentimos, todos nuestros servidores se encuentran fuera de servicio en este momento.</p>
+    <p>Nuestro equipo tecnico ya fue notificado y esta trabajando para restablecer el servicio.</p>
+    <p>Por favor intente nuevamente en unos minutos.</p>
+    <span class="code">HTTP 503 &mdash; Service Unavailable</span>
+  </div>
+</body>
+</html>
