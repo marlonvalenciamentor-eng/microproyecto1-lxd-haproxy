@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
+exec 0</dev/null   # prevent stdin from vagrant SSH channel interfering with lxc commands
 
 NODE_IP="192.168.100.2"
 SERVER_IP="192.168.100.3"

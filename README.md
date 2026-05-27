@@ -156,13 +156,13 @@ lxc start web2 web4
 ### Prerrequisitos
 
 - Java 21+ instalado  
-- Apache JMeter 5.6.3 descomprimido en `C:\jmeter\`  
+- Apache JMeter 5.6.3 descomprimido en `C:\jmeter\apache-jmeter-5.6.3\`  
 
 ### Escenario 1 — Carga normal (500 usuarios, round-robin)
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jre-21.0.11.10-hotspot"
-jmeter.bat -n -t jmeter\escenario1_carga_normal.jmx -l jmeter\resultado1.jtl
+C:\jmeter\apache-jmeter-5.6.3\bin\jmeter.bat -n -t jmeter\escenario1_carga_normal.jmx -l jmeter\resultado1.jtl
 ```
 
 Verifica que solo web1 y web2 respondan en distribución ~50/50.
@@ -173,7 +173,7 @@ Verifica que solo web1 y web2 respondan en distribución ~50/50.
 2. Ejecutar:
 
 ```powershell
-jmeter.bat -n -t jmeter\escenario2_falla_parcial.jmx -l jmeter\resultado2.jtl
+C:\jmeter\apache-jmeter-5.6.3\bin\jmeter.bat -n -t jmeter\escenario2_falla_parcial.jmx -l jmeter\resultado2.jtl
 ```
 
 Verifica que web3 y web4 absorben todo el tráfico sin errores.
@@ -184,7 +184,7 @@ Verifica que web3 y web4 absorben todo el tráfico sin errores.
 2. Ejecutar:
 
 ```powershell
-jmeter.bat -n -t jmeter\escenario3_falla_total.jmx -l jmeter\resultado3.jtl
+C:\jmeter\apache-jmeter-5.6.3\bin\jmeter.bat -n -t jmeter\escenario3_falla_total.jmx -l jmeter\resultado3.jtl
 ```
 
 Verifica que el 100% de las respuestas son HTTP 503 con el cuerpo personalizado.

@@ -1,29 +1,33 @@
 #!/bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
+exec 0</dev/null   # prevent stdin from vagrant SSH channel interfering with lxc commands
 
 NODE_IP="192.168.100.3"
 
-# ── 1. Install LXD ────────────────────────────────────────────────────────
+# ── 1. Install / refresh LXD ─────────────────────────────────────────────
 apt-get update -qq
 apt-get install -y -qq snapd
 export PATH=$PATH:/snap/bin
 
-if ! snap list lxd 2>/dev/null | grep -q lxd; then
+# ── 2. Initialize LXD cluster (bootstrap node) ───────────────────────────
+# If cluster is already healthy, skip everything.
+# Otherwise purge existing LXD state and do a clean init.
+if lxc cluster list 2>/dev/null | grep -q "servidorUbuntu.*ONLINE"; then
+  echo "LXD cluster already healthy — skipping init"
+else
+  echo "Purging existing LXD state and reinstalling for clean bootstrap..."
+  lxd shutdown 2>/dev/null || true
+  sleep 3
+  snap remove lxd --purge 2>/dev/null || true
   snap install lxd --channel=5.0/stable
-else
-  snap refresh lxd --channel=5.0/stable 2>/dev/null || true
-fi
+  sleep 15
+  export PATH=$PATH:/snap/bin
+  lxd waitready --timeout=60
 
-lxd waitready --timeout=60
-
-# ── 2. Initialize LXD cluster (bootstrap node, idempotent) ───────────────
-if lxc cluster list 2>/dev/null | grep -q "servidorUbuntu"; then
-  echo "LXD cluster already bootstrapped, skipping init"
-else
-  echo "Initializing LXD cluster bootstrap node..."
   lxd init --preseed <<EOF
-config: {}
+config:
+  core.https_address: ${NODE_IP}:8443
 networks:
 - config:
     ipv4.address: 10.10.10.1/24
@@ -53,7 +57,7 @@ cluster:
   server_name: servidorUbuntu
   enabled: true
   member_config: []
-  cluster_address: ${NODE_IP}:8443
+  cluster_address: ""
   cluster_certificate: ""
   server_address: ${NODE_IP}:8443
   cluster_token: ""
@@ -61,19 +65,14 @@ EOF
 fi
 
 # ── 3. Generate join token for clienteUbuntu ─────────────────────────────
-# Always regenerate — old tokens expire
-echo "Generating join token for clienteUbuntu..."
+# Always regenerate — tokens expire
+echo "Generating fresh join token for clienteUbuntu..."
 lxc cluster add clienteUbuntu --quiet 2>/dev/null | tail -1 > /vagrant/lxd_join_token.txt
 echo "Join token saved (first 20 chars): $(head -c 20 /vagrant/lxd_join_token.txt)..."
 
 # ── 4. Launch web1 and web3 containers (idempotent) ──────────────────────
-if ! lxc info web1 2>/dev/null | grep -q "Status"; then
-  lxc launch ubuntu:18.04 web1 --target servidorUbuntu
-fi
-if ! lxc info web3 2>/dev/null | grep -q "Status"; then
-  lxc launch ubuntu:18.04 web3 --target servidorUbuntu
-fi
-
+lxc info web1 2>/dev/null | grep -q "Status" || lxc launch ubuntu:18.04 web1 --target servidorUbuntu
+lxc info web3 2>/dev/null | grep -q "Status" || lxc launch ubuntu:18.04 web3 --target servidorUbuntu
 sleep 15
 
 # ── 5. Install Apache on web1 and web3 ───────────────────────────────────
@@ -93,10 +92,7 @@ lxc config device list web3 2>/dev/null | grep -q proxy80 || \
     listen=tcp:0.0.0.0:8083 connect=tcp:127.0.0.1:80 bind=host
 
 # ── 7. Launch haproxy container (idempotent) ─────────────────────────────
-if ! lxc info haproxy 2>/dev/null | grep -q "Status"; then
-  lxc launch ubuntu:18.04 haproxy --target servidorUbuntu
-  sleep 10
-fi
+lxc info haproxy 2>/dev/null | grep -q "Status" || { lxc launch ubuntu:18.04 haproxy --target servidorUbuntu; sleep 10; }
 
 lxc exec haproxy -- bash -c "apt-get update -qq && apt-get install -y haproxy" || true
 
