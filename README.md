@@ -11,7 +11,7 @@
 ```
 Windows Host
   │
-  ├── localhost:8080  → HAProxy frontend (balanceo de carga)
+  ├── localhost:8090  → HAProxy frontend (balanceo de carga)
   └── localhost:8404  → HAProxy Stats GUI
        │
        ▼  NAT VirtualBox
@@ -88,7 +88,7 @@ Resultado esperado:
 
 | Servicio | URL |
 |---------|-----|
-| HAProxy (balanceador) | http://localhost:8080 |
+| HAProxy (balanceador) | http://localhost:8090 |
 | HAProxy Stats GUI | http://localhost:8404/stats |
 | web1 directo (producción) | http://localhost:8081 |
 | web3 directo (backup) | http://localhost:8083 |
@@ -104,7 +104,7 @@ Resultado esperado:
 ```powershell
 # PowerShell — 6 peticiones al balanceador
 1..6 | ForEach-Object {
-    $r = Invoke-WebRequest -Uri "http://localhost:8080" -UseBasicParsing
+    $r = Invoke-WebRequest -Uri "http://localhost:8090" -UseBasicParsing
     if ($r.Content -match 'WEB (\d)') { "Request $_ -> WEB $($Matches[1])" }
 }
 ```
@@ -123,7 +123,7 @@ vagrant ssh clienteUbuntu
 lxc stop web2
 ```
 
-Luego acceder a `http://localhost:8080` — debe responder **WEB 3** o **WEB 4**.
+Luego acceder a `http://localhost:8090` — debe responder **WEB 3** o **WEB 4**.
 
 El Stats GUI en `http://localhost:8404/stats` mostrará web1/web2 en rojo (DOWN) y web3/web4 en verde (UP).
 
@@ -137,7 +137,7 @@ vagrant ssh clienteUbuntu
 lxc stop web2 web4
 ```
 
-Acceder a `http://localhost:8080` — debe mostrar la página **"Servicio Temporalmente No Disponible"**.
+Acceder a `http://localhost:8090` — debe mostrar la página **"Servicio Temporalmente No Disponible"**.
 
 ### Restaurar servidores
 

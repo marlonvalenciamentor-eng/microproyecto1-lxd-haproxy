@@ -18,9 +18,9 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET HAProxy :8080">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET HAProxy :8090">
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
-          <intProp name="HTTPSampler.port">8080</intProp>
+          <intProp name="HTTPSampler.port">8090</intProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.path">/</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>

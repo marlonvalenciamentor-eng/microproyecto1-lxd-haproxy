@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
     s.vm.hostname = "servidorUbuntu"
     s.vm.network :private_network, ip: "192.168.100.3"
     # HAProxy frontend
-    s.vm.network "forwarded_port", guest: 80,   host: 8080
+    s.vm.network "forwarded_port", guest: 80,   host: 8090
     # HAProxy stats GUI
     s.vm.network "forwarded_port", guest: 8404, host: 8404
     # Direct access to each web container (optional / debug)
