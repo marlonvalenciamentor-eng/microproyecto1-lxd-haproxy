@@ -3,17 +3,26 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 NODE_IP="192.168.100.3"
-CLIENT_IP="192.168.100.2"
 
 # ── 1. Install LXD ────────────────────────────────────────────────────────
 apt-get update -qq
 apt-get install -y -qq snapd
-snap install lxd --channel=5.0/stable
 export PATH=$PATH:/snap/bin
-sleep 5
 
-# ── 2. Initialize LXD cluster (bootstrap node) ───────────────────────────
-lxd init --preseed <<EOF
+if ! snap list lxd 2>/dev/null | grep -q lxd; then
+  snap install lxd --channel=5.0/stable
+else
+  snap refresh lxd --channel=5.0/stable 2>/dev/null || true
+fi
+
+lxd waitready --timeout=60
+
+# ── 2. Initialize LXD cluster (bootstrap node, idempotent) ───────────────
+if lxc cluster list 2>/dev/null | grep -q "servidorUbuntu"; then
+  echo "LXD cluster already bootstrapped, skipping init"
+else
+  echo "Initializing LXD cluster bootstrap node..."
+  lxd init --preseed <<EOF
 config: {}
 networks:
 - config:
@@ -49,40 +58,48 @@ cluster:
   server_address: ${NODE_IP}:8443
   cluster_token: ""
 EOF
+fi
 
-# ── 3. Generate join token for clienteUbuntu and save to shared folder ────
+# ── 3. Generate join token for clienteUbuntu ─────────────────────────────
+# Always regenerate — old tokens expire
+echo "Generating join token for clienteUbuntu..."
 lxc cluster add clienteUbuntu --quiet 2>/dev/null | tail -1 > /vagrant/lxd_join_token.txt
-echo "Join token saved to /vagrant/lxd_join_token.txt"
+echo "Join token saved (first 20 chars): $(head -c 20 /vagrant/lxd_join_token.txt)..."
 
-# ── 4. Launch web1 (produccion) and web3 (backup) ────────────────────────
-lxc launch ubuntu:18.04 web1 --target servidorUbuntu
-lxc launch ubuntu:18.04 web3 --target servidorUbuntu
+# ── 4. Launch web1 and web3 containers (idempotent) ──────────────────────
+if ! lxc info web1 2>/dev/null | grep -q "Status"; then
+  lxc launch ubuntu:18.04 web1 --target servidorUbuntu
+fi
+if ! lxc info web3 2>/dev/null | grep -q "Status"; then
+  lxc launch ubuntu:18.04 web3 --target servidorUbuntu
+fi
 
-# Wait for containers to get an IP
 sleep 15
 
-# Install Apache on web1
-lxc exec web1 -- bash -c "apt-get update -qq && apt-get install -y apache2"
+# ── 5. Install Apache on web1 and web3 ───────────────────────────────────
+lxc exec web1 -- bash -c "apt-get update -qq && apt-get install -y apache2" || true
 lxc file push /vagrant/web/web1/index.htm web1/var/www/html/index.html
 
-# Install Apache on web3
-lxc exec web3 -- bash -c "apt-get update -qq && apt-get install -y apache2"
+lxc exec web3 -- bash -c "apt-get update -qq && apt-get install -y apache2" || true
 lxc file push /vagrant/web/web3/index.htm web3/var/www/html/index.html
 
-# ── 5. Expose web containers via proxy devices ────────────────────────────
-lxc config device add web1 proxy80 proxy \
-  listen=tcp:0.0.0.0:8081 connect=tcp:127.0.0.1:80 bind=host
+# ── 6. Proxy devices for web containers (idempotent) ─────────────────────
+lxc config device list web1 2>/dev/null | grep -q proxy80 || \
+  lxc config device add web1 proxy80 proxy \
+    listen=tcp:0.0.0.0:8081 connect=tcp:127.0.0.1:80 bind=host
 
-lxc config device add web3 proxy80 proxy \
-  listen=tcp:0.0.0.0:8083 connect=tcp:127.0.0.1:80 bind=host
+lxc config device list web3 2>/dev/null | grep -q proxy80 || \
+  lxc config device add web3 proxy80 proxy \
+    listen=tcp:0.0.0.0:8083 connect=tcp:127.0.0.1:80 bind=host
 
-# ── 6. Launch haproxy container ───────────────────────────────────────────
-lxc launch ubuntu:18.04 haproxy --target servidorUbuntu
-sleep 10
+# ── 7. Launch haproxy container (idempotent) ─────────────────────────────
+if ! lxc info haproxy 2>/dev/null | grep -q "Status"; then
+  lxc launch ubuntu:18.04 haproxy --target servidorUbuntu
+  sleep 10
+fi
 
-lxc exec haproxy -- bash -c "apt-get update -qq && apt-get install -y haproxy"
+lxc exec haproxy -- bash -c "apt-get update -qq && apt-get install -y haproxy" || true
 
-# Push config and error page
 lxc file push /vagrant/haproxy/haproxy.cfg  haproxy/etc/haproxy/haproxy.cfg
 lxc exec haproxy -- mkdir -p /etc/haproxy/errors
 lxc file push /vagrant/haproxy/errors/503.http haproxy/etc/haproxy/errors/503.http
@@ -90,11 +107,14 @@ lxc file push /vagrant/haproxy/errors/503.http haproxy/etc/haproxy/errors/503.ht
 lxc exec haproxy -- systemctl restart haproxy
 lxc exec haproxy -- systemctl enable  haproxy
 
-# ── 7. Expose HAProxy frontend and stats ─────────────────────────────────
-lxc config device add haproxy proxy80   proxy \
-  listen=tcp:0.0.0.0:80   connect=tcp:127.0.0.1:80  bind=host
-lxc config device add haproxy proxy8404 proxy \
-  listen=tcp:0.0.0.0:8404 connect=tcp:127.0.0.1:8404 bind=host
+# ── 8. Expose HAProxy ports (idempotent) ─────────────────────────────────
+lxc config device list haproxy 2>/dev/null | grep -q proxy80 || \
+  lxc config device add haproxy proxy80   proxy \
+    listen=tcp:0.0.0.0:80   connect=tcp:127.0.0.1:80  bind=host
+
+lxc config device list haproxy 2>/dev/null | grep -q proxy8404 || \
+  lxc config device add haproxy proxy8404 proxy \
+    listen=tcp:0.0.0.0:8404 connect=tcp:127.0.0.1:8404 bind=host
 
 echo ""
 echo "=== servidorUbuntu provisioning complete ==="
